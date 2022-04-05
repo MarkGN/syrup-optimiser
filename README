@@ -1,0 +1,19 @@
+This is a script to automate compounding of CAKE in PancakeSwap's SYRUP pool. It is assumed a user manually deposits CAKE into the manual CAKE
+
+USE
+
+To install required packages, run:
+
+pip3 install python-dotenv scipy web3
+
+Rename env.dummy as .env, and change the address and private key to your own. Then, run with:
+
+python3 syrup_optimiser.py
+
+Ideally this should be run as a pm2 process, because the optimal harvesting schedule might be on the order of once every few weeks, depending on how much CAKE you have, and it's not unreasonable for there to be a crash before then.
+
+BACKGROUND
+
+PancakeSwap allows users to stake CAKE, its governance token, to receive rewards of more CAKE or of other tokens. These give simple interest; if you want compound interest, you have to compound manually. There's an automatic version, but it has an associated fee.
+
+This script allows a user to stake CAKE in the manual CAKE pool (ie its rewards are denominated in CAKE) and automatically compound at an 'optimal' rate. This rate is chosen so as to maximise compound growth factoring in gas fees. It does not consider past or future price changes of either CAKE or BNB, or changes of the SYRUP pool's APR (it uses the average over the past minute); it doesn't buy BNB for gas, so if you leave this alone long enough you'll run out and it will stop working. In practice, I've found these to be reasonable assumptions, but they may break under unforeseen circumstances, or if you attempt to port this code to other DEXes or generalise to other SYRUP or LP pools. The CAKE/CAKE pool is quite a reasonable investment: it's simple, gas fees are low, and there's only currency risk of one currency.
