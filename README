@@ -1,4 +1,4 @@
-This is a script to automate compounding of CAKE in PancakeSwap's SYRUP pool. It is assumed a user manually deposits CAKE into the manual CAKE
+This is a script to automate compounding of CAKE in PancakeSwap's SYRUP pool. It is assumed a user manually deposits CAKE into the manual CAKE pool and has BNB available for use beforehand.
 
 USE
 

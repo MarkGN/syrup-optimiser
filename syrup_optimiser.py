@@ -30,20 +30,6 @@ web3.eth.default_account = my_account.address
 def optimal_harvest_schedule(principal, rho, fee):
   return so.minimize(lambda t:-math.log(1+rho*t-fee/principal)/t, [1], bounds=so.Bounds(fee/(principal*rho), (math.e + fee/principal - 1) / rho))
 
-# This really doesn't belong here, so when I get around to creating a dedicated blockchain.py file, this'll go there
-def send_bnb(amt, to):
-  nonce = web3.eth.get_transaction_count(my_account.address)
-  tx = {
-    'nonce': nonce,
-    'to': to,
-    'value': web3.toWei(amt, 'ether'),
-    'gas': 2000000,
-    'gasPrice': web3.eth.gas_price,
-  }
-  signed_tx = web3.eth.account.signTransaction(tx, key)
-  tx_hash = web3.eth.sendRawTransaction(signed_tx.rawTransaction)
-  return tx_hash
-
 # Data downloaded is your principal, pending, rho, and the CAKE/BNB price
 # TODO async-parallelise this
 def download_data():
@@ -93,42 +79,6 @@ def main_loop():
       est_check = datetime.datetime.now() + datetime.timedelta(seconds=check_delay) ; est_check = est_check.replace(microsecond=0)
       print(f"Next compound estimated at {est}, checking again at {est_check}")
       time.sleep(check_delay)
-
-def compound_altcoin(token_addr):
-  # figure out amt; harvest; swap via BNB (or whatever) to CAKE; restake
-  pool_contract = web3.eth.contract(address=token_addr, abi=pool_abi)
-  now = web3.eth.get_block_number() # so that everything is in the same block
-  reward = pool_contract.functions.pendingReward(my_account.address).call(block_identifier=now)
-  # TODO code to decide whether reward is high enough to justify the gas
-  # harvest
-  # TODO is this withdraw or deposit? And does it make a difference?
-  harvest_tx = pool_contract.functions.withdraw(0).buildTransaction({
-    'chainId': chain_id,
-    'value': 0,
-    'nonce': web3.eth.get_transaction_count(my_account.address)
-  })
-  signed_txn = my_account.signTransaction(harvest_tx)
-  id = web3.toHex(web3.eth.sendRawTransaction(signed_txn.rawTransaction))
-  print(id)
-  # swap
-  # reward = reward # set it to however much we have now, in case dust does anything
-  expectation = 0 # TODO figure this out with like 99% value: we don't want to get sandwiched *too* hard
-  path = [] # hard-code this? be nice to be able to figure it out from factory shen-shens, but maybe overkill. Ooh, store it in a data file, obviously.
-  deadline = "now o'clock" # TODO current time plus 1 minute
-  router_contract = web3.eth.contract(address=router_addr, abi=router_abi)
-  router_tx = router_contract.functions.swapExactTokensForTokens(reward, expectation, path, my_addr, deadline).buildTransaction({
-    'chainId': chain_id,
-    'value': 0,
-    'nonce': web3.eth.get_transaction_count(my_account.address)
-  })
-  signed_txn = my_account.signTransaction(router_tx)
-  id = web3.toHex(web3.eth.sendRawTransaction(signed_txn.rawTransaction))
-  # Can I wrap the previous few lines into a single function? Kind of boilerplate for my tastes.
-  print(id)
-  # can we get a loop that tries maybe three times to send this, then hangs for 30min?
-  # re-stake
-  assets = "check SPS's balanceOf"
-  pool_contract.functions.deposit
 
 if __name__ == "__main__":
   main_loop()
